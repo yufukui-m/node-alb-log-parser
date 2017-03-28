@@ -4,19 +4,20 @@ var parse = require('./index.js')
 
 tap.test('http traffic', function (t) {
   var parsed = parse(
-    '2015-05-13T23:39:43.945958Z my-loadbalancer 192.168.131.39:2817 10.0.0.1:80 0.000073 0.001048 0.000057 200 200 0 29 "GET http://www.example.com:80/ HTTP/1.1" "curl/7.38.0" - -'
+    'http 2015-05-13T23:39:43.945958Z my-loadbalancer 192.168.131.39:2817 10.0.0.1:80 0.000073 0.001048 0.000057 200 200 0 29 "GET http://www.example.com:80/ HTTP/1.1" "curl/7.38.0" - - arn:aws:elasticloadbalancing:us-west-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067 "Root=1-58337262-36d228ad5d99923122bbe354"'
   );
+  t.equal(parsed.type, 'http', 'we have type');
   t.equal(parsed.timestamp, '2015-05-13T23:39:43.945958Z', 'we have timestamp');
   t.equal(parsed.elb, 'my-loadbalancer', 'we have ELB');
   t.equal(parsed.client, '192.168.131.39', 'we have client');
   t.equal(parsed.client_port, '2817', 'we have client_port');
-  t.equal(parsed.backend, '10.0.0.1', 'we have backend');
-  t.equal(parsed.backend_port, '80', 'we have backend_port');
+  t.equal(parsed.target, '10.0.0.1', 'we have target');
+  t.equal(parsed.target_port, '80', 'we have target_port');
   t.equal(parsed.request_processing_time, '0.000073', 'we have request_processing_time');
-  t.equal(parsed.backend_processing_time, '0.001048', 'we have backend_processing_time');
+  t.equal(parsed.target_processing_time, '0.001048', 'we have target_processing_time');
   t.equal(parsed.response_processing_time, '0.000057', 'we have response_processing_time');
   t.equal(parsed.elb_status_code, '200', 'we have elb_status_code');
-  t.equal(parsed.backend_status_code, '200', 'we have backend_status_code');
+  t.equal(parsed.target_status_code, '200', 'we have target_status_code');
   t.equal(parsed.received_bytes, '0', 'we have received_bytes');
   t.equal(parsed.sent_bytes, '29', 'we have sent_bytes');
   t.equal(parsed.request, 'GET http://www.example.com:80/ HTTP/1.1', 'we have request');
@@ -31,24 +32,27 @@ tap.test('http traffic', function (t) {
   t.equal(parsed.user_agent, 'curl/7.38.0', 'we have user_anget');
   t.equal(parsed.ssl_cipher, '-', 'we have ssl_cipher');
   t.equal(parsed.ssl_protocol, '-', 'we have ssl_protocol');
+  t.equal(parsed.target_group_arn, 'arn:aws:elasticloadbalancing:us-west-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067', 'we have target_group_arn');
+  t.equal(parsed.trace_id, 'Root=1-58337262-36d228ad5d99923122bbe354', 'we have trace_id');
   t.end();
 });
 
+
 tap.test('https traffic', function (t) {
   var parsed = parse(
-    '2015-05-13T23:39:43.945958Z my-loadbalancer 192.168.131.39:2817 10.0.0.1:80 0.000086 0.001048 0.001337 200 200 0 57 "GET https://mytest-111.ap-northeast-1.elb.amazonaws.com:443/p/a/t/h?foo=bar&hoge=fuga HTTP/1.1" "curl/7.38.0" DHE-RSA-AES128-SHA TLSv1.2'
+    'https 2015-05-13T23:39:43.945958Z my-loadbalancer 192.168.131.39:2817 10.0.0.1:80 0.000086 0.001048 0.001337 200 200 0 57 "GET https://mytest-111.ap-northeast-1.elb.amazonaws.com:443/p/a/t/h?foo=bar&hoge=fuga HTTP/1.1" "curl/7.38.0" DHE-RSA-AES128-SHA TLSv1.2 arn:aws:elasticloadbalancing:us-west-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067 "Root=1-58337262-36d228ad5d99923122bbe354"'
   );
   t.equal(parsed.timestamp, '2015-05-13T23:39:43.945958Z', 'we have timestamp');
   t.equal(parsed.elb, 'my-loadbalancer', 'we have ELB');
   t.equal(parsed.client, '192.168.131.39', 'we have client');
   t.equal(parsed.client_port, '2817', 'we have client_port');
-  t.equal(parsed.backend, '10.0.0.1', 'we have backend');
-  t.equal(parsed.backend_port, '80', 'we have backend_port');
+  t.equal(parsed.target, '10.0.0.1', 'we have target');
+  t.equal(parsed.target_port, '80', 'we have target_port');
   t.equal(parsed.request_processing_time, '0.000086', 'we have request_processing_time');
-  t.equal(parsed.backend_processing_time, '0.001048', 'we have backend_processing_time');
+  t.equal(parsed.target_processing_time, '0.001048', 'we have target_processing_time');
   t.equal(parsed.response_processing_time, '0.001337', 'we have response_processing_time');
   t.equal(parsed.elb_status_code, '200', 'we have elb_status_code');
-  t.equal(parsed.backend_status_code, '200', 'we have backend_status_code');
+  t.equal(parsed.target_status_code, '200', 'we have target_status_code');
   t.equal(parsed.received_bytes, '0', 'we have received_bytes');
   t.equal(parsed.sent_bytes, '57', 'we have sent_bytes');
   t.equal(parsed.request, 'GET https://mytest-111.ap-northeast-1.elb.amazonaws.com:443/p/a/t/h?foo=bar&hoge=fuga HTTP/1.1', 'we have request');
@@ -68,7 +72,7 @@ tap.test('https traffic', function (t) {
 
 tap.test('tcp traffic', function (t) {
   var parsed = parse(
-    '2015-05-13T23:39:43.945958Z my-loadbalancer 192.168.131.39:2817 10.0.0.1:80 0.001069 0.000028 0.000041 - - 82 305 "- - - " "-" - -'
+    'http 2015-05-13T23:39:43.945958Z my-loadbalancer 192.168.131.39:2817 10.0.0.1:80 0.001069 0.000028 0.000041 - - 82 305 "- - - " "-" - - arn:aws:elasticloadbalancing:us-west-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067 "Root=1-58337262-36d228ad5d99923122bbe354"'
   );
   t.equal(parsed.request, '- - - ', 'we have request');
   t.equal(parsed.user_agent, '-', 'we have user_anget');
@@ -77,7 +81,7 @@ tap.test('tcp traffic', function (t) {
 
 tap.test('ssl traffic', function (t) {
   var parsed = parse(
-    '2015-05-13T23:39:43.945958Z my-loadbalancer 192.168.131.39:2817 10.0.0.1:80 0.001065 0.000015 0.000023 - - 57 502 "- - - " "-" ECDHE-ECDSA-AES128-GCM-SHA256 TLSv1.2'
+    'https 2015-05-13T23:39:43.945958Z my-loadbalancer 192.168.131.39:2817 10.0.0.1:80 0.001065 0.000015 0.000023 - - 57 502 "- - - " "-" ECDHE-ECDSA-AES128-GCM-SHA256 TLSv1.2 arn:aws:elasticloadbalancing:us-west-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067 "Root=1-58337262-36d228ad5d99923122bbe354"'
   );
   t.equal(parsed.ssl_cipher, 'ECDHE-ECDSA-AES128-GCM-SHA256', 'we have ssl_cipher');
   t.equal(parsed.ssl_protocol, 'TLSv1.2', 'we have ssl_protocol');
@@ -86,9 +90,9 @@ tap.test('ssl traffic', function (t) {
 
 tap.test('doesn\'t receive traffic ', function (t) {
   var parsed = parse(
-    '2015-05-13T23:39:43.945958Z my-loadbalancer 192.168.131.39:2817 -1 0.001065 0.000015 0.000023 - - 57 502 "- - - " "-" ECDHE-ECDSA-AES128-GCM-SHA256 TLSv1.2'
+    'http 2015-05-13T23:39:43.945958Z my-loadbalancer 192.168.131.39:2817 -1 0.001065 0.000015 0.000023 - - 57 502 "- - - " "-" ECDHE-ECDSA-AES128-GCM-SHA256 TLSv1.2 arn:aws:elasticloadbalancing:us-west-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067 "Root=1-58337262-36d228ad5d99923122bbe354"'
   );
-  t.equal(parsed.backend, '-1', 'we have backend');
-  t.equal(parsed.backend_port, '-1', 'we have backend_port');
+  t.equal(parsed.target, '-1', 'we have target');
+  t.equal(parsed.target_port, '-1', 'we have target_port');
   t.end();
 });
