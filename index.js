@@ -58,22 +58,21 @@ module.exports = function (line) {
       else {
         field = line.substr(0, m.index);
       }
-
       parsed[label] = field;
 
       return true;
     }
     field = line.substr(0, m.index);
     line = line.substr(m.index + delimiter.length);
-    parsed[label] = field;
+    parsed[label] = field == 0 ? 0 : Number(field) || field;
   });
 
   // target
   if(parsed.target != -1) {
-    parsed['target_port'] = parsed.target.split(":")[1];
+    parsed['target_port'] = parseInt(parsed.target.split(":")[1]);
     parsed['target'] = parsed.target.split(":")[0];
   } else {
-    parsed['target_port'] = '-1';
+    parsed['target_port'] = -1;
   }
 
   // request
@@ -93,7 +92,7 @@ module.exports = function (line) {
     i++;
     parsed[request_labels[i]] = url.hostname;
     i++;
-    parsed[request_labels[i]] = url.port;
+    parsed[request_labels[i]] = parseInt(url.port);
     i++;
     parsed[request_labels[i]] = url.pathname;
     i++;
