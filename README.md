@@ -1,5 +1,7 @@
 # alb-log-parser
 
+[![npm](https://img.shields.io/npm/v/alb-log-parser.svg)](https://www.npmjs.com/package/alb-log-parser)
+
 A basic parser for ALB access logs, forked from elb log parser git@github.com:toshihirock/node-elb-log-parser.git
 i cannot find alb log parser instead of elb-log-parser. so i modify a bit of the code. Thank you toshihirock!
 
