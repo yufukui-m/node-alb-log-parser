@@ -1,20 +1,18 @@
 #! /usr/bin/env node
+
+/**
+ * Field names, in order of appearance in the ALB log lines
+ */
+const fields = [
+  'type',                   'timestamp',                'elb',                    'client:port', 
+  'target:port',            'request_processing_time',  'target_processing_time', 'response_processing_time',
+  'elb_status_code',        'target_status_code',       'received_bytes',         'sent_bytes', 
+  'request',                'user_agent',               'ssl_cipher',             'ssl_protocol',
+  'target_group_arn',       'trace_id',                 'domain_name',            'chosen_cert_arn', 
+  'matched_rule_priority',  'request_creation_time',    'actions_executed',       'redirect_url', 
+  'error_reason',           'target:port_list',         'target_status_code_list'
+]
 module.exports = function (line) {
-  var parsed = {};
-  var url = require('url');
-
-  var request_labels = 
-  [
-    'request_method',
-    'request_uri',
-    'request_http_version',
-    'request_uri_scheme',
-    'request_uri_host',
-    'request_uri_port',
-    'request_uri_path',
-    'request_uri_query'
-  ];
-
   //
   // Trailing newline? NOTHX
   //
@@ -22,89 +20,8 @@ module.exports = function (line) {
     line = line.slice(0, line.length - 1);
   }
 
-  [
-    { 'type'                        : ' '   },
-    { 'timestamp'                   : ' '   },
-    { 'elb'                         : ' '   },
-    { 'client'                      : ':'   },
-    { 'client_port'                 : ' '   },
-    { 'target'                      : ' '   },
-    { 'request_processing_time'     : ' '   },
-    { 'target_processing_time'      : ' '   },
-    { 'response_processing_time'    : ' '   },
-    { 'elb_status_code'             : ' '   },
-    { 'target_status_code'          : ' '   },
-    { 'received_bytes'              : ' '   },
-    { 'sent_bytes'                  : ' "'  },
-    { 'request'                     : '" "' },
-    { 'user_agent'                  : '" '  },
-    { 'ssl_cipher'                  : ' '   },
-    { 'ssl_protocol'                : ' '   },
-    { 'target_group_arn'            : ' "'   },
-    { 'trace_id'                    : '"'   }
-  ].some(function (t) {
-    var label = Object.keys(t)[0];
-    delimiter = t[label]
-    var m = line.match(delimiter);
-    if (m === null) {
-      //
-      // No match. Try to pick off the last element.
-      //
-      m = line.match(delimiter.slice(0, 1));
-
-      if (m === null) {
-        field = line;
-      }
-      else {
-        field = line.substr(0, m.index);
-      }
-      parsed[label] = field;
-
-      return true;
-    }
-    field = line.substr(0, m.index);
-    line = line.substr(m.index + delimiter.length);
-    parsed[label] = field == 0 ? 0 : Number(field) || field;
-  });
-
-  // target
-  if(parsed.target != -1) {
-    parsed['target_port'] = parseInt(parsed.target.split(":")[1]);
-    parsed['target'] = parsed.target.split(":")[0];
-  } else {
-    parsed['target_port'] = -1;
-  }
-
-  // request
-  if(parsed.request != '- - - ') {
-    var i = 0;
-    var method = parsed.request.split(" ")[0];
-    var url = url.parse(parsed.request.split(" ")[1]);
-    var http_version = parsed.request.split(" ")[2];
-
-    parsed[request_labels[i]] = method;
-    i++;
-    parsed[request_labels[i]] = url.href;
-    i++;
-    parsed[request_labels[i]] = http_version;
-    i++;
-    parsed[request_labels[i]] = url.protocol;
-    i++;
-    parsed[request_labels[i]] = url.hostname;
-    i++;
-    parsed[request_labels[i]] = parseInt(url.port);
-    i++;
-    parsed[request_labels[i]] = url.pathname;
-    i++;
-    parsed[request_labels[i]] = url.query;
-
-  } else {
-    request_labels.forEach(function(label) {
-      parsed[label] = '-';
-    });
-  }
-
-  return parsed;
+  const parsed = parseAlbLogLine(line)
+  return parsed
 };
 
 if (require.main === module) {
@@ -122,4 +39,95 @@ if (require.main === module) {
       }
     }))
     .pipe(process.stdout);
+}
+
+/**
+ * Parse one line of an AWS Application Load Balancer log
+ * 
+ * @param {string} line 
+ */
+function parseAlbLogLine(line) {
+  const parsed = {}
+  let counter = 0
+  let finished = false
+  let quoteSeen = false
+  let element = ''
+  for (const c of line + ' ') {
+    if (finished) {
+      if (element) {
+        const fieldName = fields[counter]
+        console.debug({fieldName: fieldName, element: element})
+        // Convert all numeric strings to numbers
+        if (element.match(/^\d+.?\d*$/)) {
+          element = Number(element)
+        }
+        if (fieldName === 'request') {
+          _decorateFromRequest(element, parsed)
+        }
+      
+        if (fieldName.match(/^\S+?:port$/)) {
+          _decorateFromPortField(fieldName, element, parsed) 
+        } else {
+          parsed[fieldName] = element
+        }
+
+        element = ''
+        counter++
+      }
+      finished = false
+    }
+
+    // treat whitespace as a delimiter *except* when inside of quotes 
+    if (c.match(/^\s$/) && !quoteSeen) finished = true 
+    
+    if (c === '"') { // beginning or end of a quote delimited string
+      if (quoteSeen) finished = true // if we've seen one quote, this closes the quote delimited string
+      quoteSeen = !quoteSeen // Toggle the quote flag
+    } else {
+      // Append the character to the element unless this character terminates the element
+      if (!finished) element += c 
+    }
+  }
+  return parsed
+}
+
+function _decorateFromPortField(fieldName, element, parsed) {
+  // We don't actually send back 'client:port' and 'target:port'; we send back 
+  // 'client', 'client_port', 'target', and 'target_port'
+  const field = fieldName.match(/^(\S+?):port/)[1] 
+  const [ip, port] = element.split(':')
+  if (ip === '-1') {
+    parsed[field] = parseInt(ip)
+  } else {
+    parsed[field] = ip
+  }
+  // console.debug({field: ip})
+  if (port) {
+    parsed[`${field}_port`] = parseInt(port)
+  } else {
+    parsed[`${field}_port`] = -1
+  }
+  return parsed 
+}
+/**
+ * Helper for parseAlbLogLine
+ * 
+ * @param {string} element 
+ * @param {object} parsed 
+ */
+function _decorateFromRequest(element, parsed) {
+  const url = require('url');
+  const [request_method, request_uri, request_http_version] = element.split(/\s+/)
+  parsed.request_method = request_method
+  parsed.request_uri = request_uri
+  parsed.request_http_version = request_http_version
+  const parsedUrl = url.parse(request_uri)
+  parsed.request_uri_scheme = parsedUrl.protocol
+  parsed.request_uri_host = parsedUrl.hostname
+  if (parsedUrl.port) {
+    parsed.request_uri_port = parseInt(parsedUrl.port)
+  }
+  parsed.request_uri_path = parsedUrl.pathname
+  parsed.request_uri_query = parsedUrl.query
+  return parsed
 }
