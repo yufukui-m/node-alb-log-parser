@@ -56,7 +56,6 @@ function parseAlbLogLine(line) {
     if (finished) {
       if (element) {
         const fieldName = fields[counter]
-        console.debug({fieldName: fieldName, element: element})
         // Convert all numeric strings to numbers
         if (element.match(/^\d+.?\d*$/)) {
           element = Number(element)
@@ -101,7 +100,6 @@ function _decorateFromPortField(fieldName, element, parsed) {
   } else {
     parsed[field] = ip
   }
-  // console.debug({field: ip})
   if (port) {
     parsed[`${field}_port`] = parseInt(port)
   } else {
