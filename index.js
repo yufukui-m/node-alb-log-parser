@@ -66,6 +66,7 @@ function parseAlbLogLine(line) {
           _decorateFromRequest(element, parsed)
         }
 
+        // H/T @jason-linthwaite (https://github.com/jason-linthwaite)
         if (!fieldName) continue
 
         if (fieldName.match(/^\S+?:port$/)) {
