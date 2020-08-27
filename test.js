@@ -387,3 +387,17 @@ tap.test('successful Lambda', function (t) {
   t.equal(parsed.error_reason, '-', 'we have error_reason')
   t.end()
 })
+
+tap.test('classification and classification reason', function(t) {
+	var parsed = parse('http 2020-08-27T16:35:00.166351Z app/my-loadbalancer/50dc6c495c0c9188 192.168.131.39:2817 192.168.201.251:80 0.000 0.440 0.000 200 200 1107 11912 "GET http://example.com:80/path?foo=bar&baz=bak HTTP/1.1" "Fake/1.0.0 (Linux)" - - arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/my-tg/ffffffffffffffff "Self=1-00000000-111111111111111111111111;Root=1-00000000-222222222222222222222222" "-" "-" 0 2020-08-27T16:34:59.725000Z "forward" "-" "-" "192.168.201.251:80" "200" "-" "-"')
+  t.equal(parsed.classification, '-', 'we have classification')
+  t.equal(parsed.classification_reason, '-', 'we have classification_reason')
+	t.end()
+})
+
+tap.test('extra fields are ignored', function(t) {
+	var parsed = parse('http 2020-08-27T16:35:00.166351Z app/my-loadbalancer/50dc6c495c0c9188 192.168.131.39:2817 192.168.201.251:80 0.000 0.440 0.000 200 200 1107 11912 "GET http://example.com:80/path?foo=bar&baz=bak HTTP/1.1" "Fake/1.0.0 (Linux)" - - arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/my-tg/ffffffffffffffff "Self=1-00000000-111111111111111111111111;Root=1-00000000-222222222222222222222222" "-" "-" 0 2020-08-27T16:34:59.725000Z "forward" "-" "-" "192.168.201.251:80" "200" "-" "-" "FOO BAR" BAZ')
+  const seen = Object.values(parsed).filter(val => (val === 'FOO BAR' || val === 'BAZ'))
+  t.equal(seen.length, 0, 'Extra fields are ignored')
+	t.end()
+})
