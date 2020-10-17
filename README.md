@@ -7,10 +7,10 @@
 A basic parser for ALB access logs, forked from elb log parser git@github.com:toshihirock/node-elb-log-parser.git
 i cannot find alb log parser instead of elb-log-parser. so i modify a bit of the code. Thank you toshihirock!
 
-## When I use this npm?
+## When I use this npm
 
-+ ALB Access Log(S3)->Lambda->ElasticSearch. Example [awslabs/amazon-elasticsearch-lambda-samples](https://github.com/awslabs/amazon-elasticsearch-lambda-samples/blob/master/src/s3_lambda_es.js)
-+ Analyze ELB Access Log
+- ALB Access Log(S3)->Lambda->ElasticSearch. Example [awslabs/amazon-elasticsearch-lambda-samples](https://github.com/awslabs/amazon-elasticsearch-lambda-samples/blob/master/src/s3_lambda_es.js)
+- Analyze ELB Access Log
 
 ## Install
 
@@ -18,6 +18,49 @@ i cannot find alb log parser instead of elb-log-parser. so i modify a bit of the
 npm install -g alb-log-parser
 ```
 
+## Supported fields
+
+See <https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html#access-log-entry-format> for definitions
+
+- `type`
+- `timestamp`
+- `elb`
+- `client`
+- `client_port`
+- `target`
+- `target_port`
+- `request_processing_time`
+- `target_processing_time`
+- `response_processing_time`
+- `elb_status_code`
+- `target_status_code`
+- `received_bytes`
+- `sent_bytes`
+- `request_method`
+- `request_uri`
+- `request_http_version`
+- `request_uri_scheme`
+- `request_uri_host`
+- `request_uri_port`
+- `request_uri_path`
+- `request_uri_query`
+- `request`
+- `user_agent`
+- `ssl_cipher`
+- `ssl_protocol`
+- `target_group_arn`
+- `trace_id`
+- `domain_name`
+- `chosen_cert_arn`
+- `matched_rule_priority`
+- `request_creation_time`
+- `actions_executed`
+- `redirect_url`
+- `error_reason`
+- `target:port_list`
+- `target_status_code_list`
+- `classification`
+- `classification_reason`
 
 ## Example API usage
 
@@ -25,35 +68,48 @@ npm install -g alb-log-parser
 node-alb-log-parser$node
 > var parse = require('./index');
 undefined
-> parse('http 2015-05-13T23:39:43.945958Z my-loadbalancer 192.168.131.39:2817 10.0.0.1:80 0.000086 0.001048 0.001337 200 200 0 57 "GET https://mytest-111.ap-northeast-1.elb.amazonaws.com:443/p/a/t/h?foo=bar&hoge=fuga HTTP/1.1" "curl/7.38.0" DHE-RSA-AES128-SHA TLSv1.2 arn:aws:elasticloadbalancing:us-west-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067 "Root=1-58337262-36d228ad5d99923122bbe354"')
-{ type: 'http',
-  timestamp: '2015-05-13T23:39:43.945958Z',
-  elb: 'my-loadbalancer',
+> parse('http 2020-08-27T16:35:00.166351Z app/my-loadbalancer/50dc6c495c0c9188 192.168.131.39:2817 192.168.201.251:80 0.000 0.440 0.000 200 200 1107 11912 "GET http://example.com:80/path?foo=bar&baz=bak HTTP/1.1" "Fake/1.0.0 (Linux)" - - arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/my-tg/ffffffffffffffff "Self=1-00000000-111111111111111111111111;Root=1-00000000-222222222222222222222222" "-" "-" 0 2020-08-27T16:34:59.725000Z "forward" "-" "-" "192.168.201.251:80" "200" "-" "-"')
+{
+  type: 'http',
+  timestamp: '2020-08-27T16:35:00.166351Z',
+  elb: 'app/my-loadbalancer/50dc6c495c0c9188',
   client: '192.168.131.39',
   client_port: 2817,
-  target: '10.0.0.1',
-  request_processing_time: 0.000086,
-  target_processing_time: 0.001048,
-  response_processing_time: 0.001337,
+  target: '192.168.201.251',
+  target_port: 80,
+  request_processing_time: 0,
+  target_processing_time: 0.44,
+  response_processing_time: 0,
   elb_status_code: 200,
   target_status_code: 200,
-  received_bytes: 0,
-  sent_bytes: 57,
-  request: 'GET https://mytest-111.ap-northeast-1.elb.amazonaws.com:443/p/a/t/h?foo=bar&hoge=fuga HTTP/1.1',
-  user_agent: 'curl/7.38.0',
-  ssl_cipher: 'DHE-RSA-AES128-SHA',
-  ssl_protocol: 'TLSv1.2',
-  target_group_arn: 'arn:aws:elasticloadbalancing:us-west-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067',
-  trace_id: 'Root=1-58337262-36d228ad5d99923122bbe354',
-  target_port: 80,
+  received_bytes: 1107,
+  sent_bytes: 11912,
   request_method: 'GET',
-  request_uri: 'https://mytest-111.ap-northeast-1.elb.amazonaws.com:443/p/a/t/h?foo=bar&hoge=fuga',
+  request_uri: 'http://example.com:80/path?foo=bar&baz=bak',
   request_http_version: 'HTTP/1.1',
-  request_uri_scheme: 'https:',
-  request_uri_host: 'mytest-111.ap-northeast-1.elb.amazonaws.com',
-  request_uri_port: 443,
-  request_uri_path: '/p/a/t/h',
-  request_uri_query: 'foo=bar&hoge=fuga' }
+  request_uri_scheme: 'http:',
+  request_uri_host: 'example.com',
+  request_uri_port: 80,
+  request_uri_path: '/path',
+  request_uri_query: 'foo=bar&baz=bak',
+  request: 'GET http://example.com:80/path?foo=bar&baz=bak HTTP/1.1',
+  user_agent: 'Fake/1.0.0 (Linux)',
+  ssl_cipher: '-',
+  ssl_protocol: '-',
+  target_group_arn: 'arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/my-tg/ffffffffffffffff',
+  trace_id: 'Self=1-00000000-111111111111111111111111;Root=1-00000000-222222222222222222222222',
+  domain_name: '-',
+  chosen_cert_arn: '-',
+  matched_rule_priority: 0,
+  request_creation_time: '2020-08-27T16:34:59.725000Z',
+  actions_executed: 'forward',
+  redirect_url: '-',
+  error_reason: '-',
+  'target:port_list': '192.168.201.251:80',
+  target_status_code_list: 200,
+  classification: '-',
+  classification_reason: '-'
+}
 >
 ```
 
@@ -62,9 +118,12 @@ You get the idea.
 ## Tests
 
 ```
-$npm test
+
+\$npm test
+
 ```
 
 ## License
 
 WTFPL
+```

@@ -4,13 +4,14 @@
  * Field names, in order of appearance in the ALB log lines
  */
 const fields = [
-  'type',                   'timestamp',                'elb',                    'client:port', 
-  'target:port',            'request_processing_time',  'target_processing_time', 'response_processing_time',
-  'elb_status_code',        'target_status_code',       'received_bytes',         'sent_bytes', 
-  'request',                'user_agent',               'ssl_cipher',             'ssl_protocol',
-  'target_group_arn',       'trace_id',                 'domain_name',            'chosen_cert_arn', 
-  'matched_rule_priority',  'request_creation_time',    'actions_executed',       'redirect_url', 
-  'error_reason',           'target:port_list',         'target_status_code_list'
+  'type',                   'timestamp',                'elb',                      'client:port',
+  'target:port',            'request_processing_time',  'target_processing_time',   'response_processing_time',
+  'elb_status_code',        'target_status_code',       'received_bytes',           'sent_bytes',
+  'request',                'user_agent',               'ssl_cipher',               'ssl_protocol',
+  'target_group_arn',       'trace_id',                 'domain_name',              'chosen_cert_arn',
+  'matched_rule_priority',  'request_creation_time',    'actions_executed',         'redirect_url',
+  'error_reason',           'target:port_list',         'target_status_code_list',  'classification',
+  'classification_reason'
 ]
 module.exports = function (line) {
   //
@@ -43,8 +44,8 @@ if (require.main === module) {
 
 /**
  * Parse one line of an AWS Application Load Balancer log
- * 
- * @param {string} line 
+ *
+ * @param {string} line
  */
 function parseAlbLogLine(line) {
   const parsed = {}
@@ -52,10 +53,11 @@ function parseAlbLogLine(line) {
   let finished = false
   let quoteSeen = false
   let element = ''
-  for (const c of line + ' ') {
+  for (const c of line + '  ') {
     if (finished) {
       if (element) {
-        const fieldName = fields[counter]
+
+        let fieldName = fields[counter]
         // Convert all numeric strings to numbers
         if (element.match(/^\d+.?\d*$/)) {
           element = Number(element)
@@ -63,9 +65,12 @@ function parseAlbLogLine(line) {
         if (fieldName === 'request') {
           _decorateFromRequest(element, parsed)
         }
-      
+
+        // H/T @jason-linthwaite (https://github.com/jason-linthwaite)
+        if (!fieldName) continue
+
         if (fieldName.match(/^\S+?:port$/)) {
-          _decorateFromPortField(fieldName, element, parsed) 
+          _decorateFromPortField(fieldName, element, parsed)
         } else {
           parsed[fieldName] = element
         }
@@ -76,24 +81,24 @@ function parseAlbLogLine(line) {
       finished = false
     }
 
-    // treat whitespace as a delimiter *except* when inside of quotes 
-    if (c.match(/^\s$/) && !quoteSeen) finished = true 
-    
+    // treat whitespace as a delimiter *except* when inside of quotes
+    if (c.match(/^\s$/) && !quoteSeen) finished = true
+
     if (c === '"') { // beginning or end of a quote delimited string
       if (quoteSeen) finished = true // if we've seen one quote, this closes the quote delimited string
       quoteSeen = !quoteSeen // Toggle the quote flag
     } else {
       // Append the character to the element unless this character terminates the element
-      if (!finished) element += c 
+      if (!finished) element += c
     }
   }
   return parsed
 }
 
 function _decorateFromPortField(fieldName, element, parsed) {
-  // We don't actually send back 'client:port' and 'target:port'; we send back 
+  // We don't actually send back 'client:port' and 'target:port'; we send back
   // 'client', 'client_port', 'target', and 'target_port'
-  const field = fieldName.match(/^(\S+?):port/)[1] 
+  const field = fieldName.match(/^(\S+?):port/)[1]
   const [ip, port] = element.split(':')
   if (ip === '-1') {
     parsed[field] = parseInt(ip)
@@ -105,13 +110,13 @@ function _decorateFromPortField(fieldName, element, parsed) {
   } else {
     parsed[`${field}_port`] = -1
   }
-  return parsed 
+  return parsed
 }
 /**
  * Helper for parseAlbLogLine
- * 
- * @param {string} element 
- * @param {object} parsed 
+ *
+ * @param {string} element
+ * @param {object} parsed
  */
 function _decorateFromRequest(element, parsed) {
   const url = require('url');
