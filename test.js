@@ -207,9 +207,9 @@ tap.test('ipv6 client', function (t) {
 
 tap.test("doesn't receive traffic ", function (t) {
   var parsed = parse(
-    'http 2015-05-13T23:39:43.945958Z my-loadbalancer 192.168.131.39:2817 -1 0.001065 0.000015 0.000023 - - 57 502 "- - - " "-" ECDHE-ECDSA-AES128-GCM-SHA256 TLSv1.2 arn:aws:elasticloadbalancing:us-west-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067 "Root=1-58337262-36d228ad5d99923122bbe354"'
+    'http 2015-05-13T23:39:43.945958Z my-loadbalancer 192.168.131.39:2817 - 0.001065 0.000015 0.000023 - - 57 502 "- - - " "-" ECDHE-ECDSA-AES128-GCM-SHA256 TLSv1.2 arn:aws:elasticloadbalancing:us-west-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067 "Root=1-58337262-36d228ad5d99923122bbe354"'
   )
-  t.equal(parsed.target, -1, 'we have target')
+  t.equal(parsed.target, '-', 'we have target')
   t.equal(parsed.target_port, -1, 'we have target_port')
   t.end()
 })
