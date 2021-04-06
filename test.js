@@ -401,3 +401,13 @@ tap.test('extra fields are ignored', function(t) {
   t.equal(seen.length, 0, 'Extra fields are ignored')
 	t.end()
 })
+
+tap.test('-1 xxxx_processing_time', function(t) {
+  var parsed = parse(
+    'http 2015-05-13T23:39:43.945958Z my-loadbalancer 192.168.131.39:2817 10.0.0.1:80 -1 -1 -1 200 200 0 29 "GET http://www.example.com:80/ HTTP/1.1" "curl/7.38.0" - - arn:aws:elasticloadbalancing:us-west-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067 "Root=1-58337262-36d228ad5d99923122bbe354"'
+  )
+  t.equal(parsed.request_processing_time, -1, 'we have -1 request_processing_time')
+  t.equal(parsed.target_processing_time, -1, 'we have -1 target_processing_time')
+  t.equal(parsed.response_processing_time, -1, 'we have -1 response_processing_time')
+  t.end()
+})
