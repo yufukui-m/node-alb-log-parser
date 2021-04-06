@@ -196,6 +196,15 @@ tap.test('ssl traffic', function (t) {
   t.end()
 })
 
+tap.test('ipv6 client', function (t) {
+  var parsed = parse(
+    'https 2015-05-13T23:39:43.945958Z my-loadbalancer 2001:db8:85a3:0:0:8a2e:370:7334:2817 10.0.0.1:80 0.001065 0.000015 0.000023 - - 57 502 "- - - " "-" ECDHE-ECDSA-AES128-GCM-SHA256 TLSv1.2 arn:aws:elasticloadbalancing:us-west-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067 "Root=1-58337262-36d228ad5d99923122bbe354"'
+  )
+  t.equal(parsed.client, '2001:db8:85a3:0:0:8a2e:370:7334', 'we have ipv6 client')
+  t.equal(parsed.client_port, 2817, 'we have ipv6 client_port')
+  t.end()
+})
+
 tap.test("doesn't receive traffic ", function (t) {
   var parsed = parse(
     'http 2015-05-13T23:39:43.945958Z my-loadbalancer 192.168.131.39:2817 -1 0.001065 0.000015 0.000023 - - 57 502 "- - - " "-" ECDHE-ECDSA-AES128-GCM-SHA256 TLSv1.2 arn:aws:elasticloadbalancing:us-west-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067 "Root=1-58337262-36d228ad5d99923122bbe354"'
