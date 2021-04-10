@@ -99,16 +99,13 @@ function _decorateFromPortField(fieldName, element, parsed) {
   // We don't actually send back 'client:port' and 'target:port'; we send back
   // 'client', 'client_port', 'target', and 'target_port'
   const field = fieldName.match(/^(\S+?):port/)[1]
-  const [ip, port] = element.split(':')
-  if (ip === '-1') {
-    parsed[field] = parseInt(ip)
-  } else {
-    parsed[field] = ip
-  }
-  if (port) {
-    parsed[`${field}_port`] = parseInt(port)
-  } else {
+  const sepIndex = element.lastIndexOf(':')
+  if (sepIndex === -1) {
+    parsed[field] = '-'
     parsed[`${field}_port`] = -1
+  } else {
+    parsed[field] = element.substring(0, sepIndex)
+    parsed[`${field}_port`] = parseInt(element.substring(sepIndex + 1, element.length))
   }
   return parsed
 }
