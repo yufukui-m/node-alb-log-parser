@@ -59,7 +59,7 @@ function parseAlbLogLine(line) {
 
         let fieldName = fields[counter]
         // Convert all numeric strings to numbers
-        if (element.match(/^\d+.?\d*$/)) {
+        if (element.match(/^-?\d+.?\d*$/)) {
           element = Number(element)
         }
         if (fieldName === 'request') {
